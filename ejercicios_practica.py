@@ -77,6 +77,30 @@ def fill():
     # No olvidarse que antes de poder crear un estudiante debe haberse
     # primero creado el tutor.
 
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    tutor1=Tutor(name='Tom')
+    tutor2=Tutor(name='Vinicius')
+    tutor3=Tutor(name='Elis')
+
+    session.add(tutor1)
+    session.add(tutor2)
+    session.add(tutor3)
+
+    estudiantes=[]
+
+    estud1=Estudiante(name='Caetano', age=79,grade=3,tutor=tutor1)
+    estud2=Estudiante(name='Gilberto', age=79, grade=4, tutor=tutor2)
+    estud3=Estudiante(name='Lenine', age=63, grade=2, tutor=tutor2)
+    estud4=Estudiante(name='Bethania', age=76, grade=5, tutor=tutor3)
+    estud5=Estudiante(name='Joao', age=48, grade=6, tutor=tutor1)
+
+    estudiantes.extend([estud1, estud2, estud3, estud4, estud5])
+
+    session.add_all(estudiantes) 
+    session.commit()
+    print('Lista de estudiantes: ', estudiantes) #No lo pide, pero print para ver cómo quedan
 
 def fetch():
     print('Comprovemos su contenido, ¿qué hay en la tabla?')
@@ -84,6 +108,16 @@ def fetch():
     # todos los objetos creaods de la tabla estudiante.
     # Imprimir en pantalla cada objeto que traiga la query
     # Realizar un bucle para imprimir de una fila a la vez
+
+    Session = sessionmaker(bind=engine) 
+    session = Session()
+
+    query = session.query(Estudiante)
+
+    print('Todos los objetos creados en la tabla Estudiante:\n')
+
+    for estudiante in query:
+        print(estudiante)
 
 
 def search_by_tutor(tutor):
@@ -95,6 +129,16 @@ def search_by_tutor(tutor):
     # Para poder realizar esta query debe usar join, ya que
     # deberá crear la query para la tabla estudiante pero
     # buscar por la propiedad de tutor.name
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    resultados = session.query(Estudiante).join(Estudiante.tutor).filter(Tutor.name==tutor)
+
+    print('Estudiantes que comparten al tutor', tutor ,': ')
+    for resultado in resultados:
+        print(resultado)
+
 
 
 def modify(id, name):
@@ -110,6 +154,27 @@ def modify(id, name):
     # TIP: En clase se hizo lo mismo para las nacionalidades con
     # en la función update_persona_nationality
 
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    #Busco x nombre, el tutor que quiero cambiar. Lo guardo en la variable tutor_cambio
+    query = session.query(Tutor).filter(Tutor.name==name)
+    tutor_cambio = query.first()
+
+    #Busco x id, al estudiante al que le quiero cambiar el tutor. Lo guardo en estud_cambio
+    query2 = session.query(Estudiante).filter(Estudiante.id==id)
+    estud_cambio = query2.first()
+
+    #Actualizo al estudiante con nombre "name"
+    estud_cambio.tutor = tutor_cambio
+
+    session.add(estud_cambio)
+    session.commit()
+
+    query3= session.query(Estudiante).filter(Estudiante.id==id)
+    
+    print('Datos actualizados del estudiante ', query3.all() )
+
 
 def count_grade(grade):
     print('Estudiante por grado')
@@ -120,19 +185,55 @@ def count_grade(grade):
     # TIP: En clase se hizo lo mismo para las nacionalidades con
     # en la función count_persona
 
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    resultados = session.query(Estudiante).filter(Estudiante.grade==grade).count()
+
+    print(f'Hay {resultados} estudiantes que cursan el', grade ,'º grado')
+
 
 if __name__ == '__main__':
     print("Bienvenidos a otra clase de Inove con Python")
     create_schema()   # create and reset database (DB)
-    # fill()
-    # fetch()
+    fill()
+    fetch()
 
-    tutor = 'nombre_tutor'
-    # search_by_tutor(tutor)
+    opcion1=int(input('\nIngrese una opción para filtrar por tutor:\n1: Tom\n2: Vinicius\n3: Elis\n'))
 
-    nuevo_tutor = 'nombre_tutor'
+    if opcion1 ==1:
+        tutor='Tom'
+    elif opcion1 ==2:
+        tutor='Vinicius'
+    elif opcion1 ==3:
+        tutor='Elis'
+    else:
+        print('La opción ingresada es inválida. ')
+
+    #tutor = 'nombre_tutor'
+    search_by_tutor(tutor)
+
+    opcion2 = int(input('\nIngrese una opción para REEMPLAZAR al tutor del estudiante 2:\n1: Tom\n2: Vinicius\n3: Elis\n'))
+
+    if opcion2 ==1:
+        nuevo_tutor='Tom'
+    elif opcion2 ==2:
+        nuevo_tutor='Vinicius'
+    elif opcion2 ==3:
+        nuevo_tutor='Elis'
+    else:
+        print('La opción ingresada es inválida. ')
+
+
+    #nuevo_tutor = 'nombre_tutor'
     id = 2
-    # modify(id, nuevo_tutor)
+    modify(id, nuevo_tutor)
 
-    grade = 2
-    # count_grade(grade)
+    opcion3 = int(input('\nIngrese una opción para contar el número de estudiantes por grado: 1, 2,...,6:\n'))
+
+    for i in range(1,7):
+        if opcion3 ==i:
+            grade=i 
+
+    #grade = 2
+    count_grade(grade)
